@@ -1,6 +1,16 @@
 "use client";
 
 import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 
 interface Step {
   jugX: number;
@@ -142,11 +152,37 @@ export default function WaterJugChallenge() {
     };
   };
 
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleSolve = async () => {
+    if (jugX <= 0 || jugY <= 0 || target <= 0) {
+      setSolution({
+        steps: [],
+        possible: false,
+        message: "All values must be positive integers greater than 0.",
+      });
+      return;
+    }
+
+    setIsLoading(true);
+
+    setTimeout(() => {
+      const result = solvePuzzle(jugX, jugY, target);
+      setSolution(result);
+      setIsLoading(false);
+    }, 500);
+  };
+
+  const handleReset = () => {
+    setSolution(null);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-cyan-50 p-4">
       <div className="max-w-6xl mx-auto space-y-6">
+        {/* Header */}
         <div className="text-center space-y-2">
-          <h1 className="text-4xl font-bold text-gray-900">
+          <h1 className="text-4xl font-bold text-gray-900 flex items-center justify-center gap-2">
             Water Jug Challenge
           </h1>
           <p className="text-gray-600 max-w-2xl mx-auto">
@@ -155,9 +191,96 @@ export default function WaterJugChallenge() {
           </p>
         </div>
 
-        <div className="text-center py-8 text-gray-500">
-          <p>Algorithm implemented - UI coming next!</p>
-        </div>
+        {/* Input Section */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Problem Setup</CardTitle>
+            <CardDescription>
+              Enter the capacities of both jugs and the target amount to measure
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="jugX">Jug X Capacity</Label>
+                <Input
+                  id="jugX"
+                  type="number"
+                  min="1"
+                  value={jugX}
+                  onChange={(e) =>
+                    setJugX(Number.parseInt(e.target.value) || 0)
+                  }
+                  placeholder="e.g., 2"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="jugY">Jug Y Capacity</Label>
+                <Input
+                  id="jugY"
+                  type="number"
+                  min="1"
+                  value={jugY}
+                  onChange={(e) =>
+                    setJugY(Number.parseInt(e.target.value) || 0)
+                  }
+                  placeholder="e.g., 10"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="target">Target Amount</Label>
+                <Input
+                  id="target"
+                  type="number"
+                  min="1"
+                  value={target}
+                  onChange={(e) =>
+                    setTarget(Number.parseInt(e.target.value) || 0)
+                  }
+                  placeholder="e.g., 4"
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-2">
+              <Button
+                onClick={handleSolve}
+                disabled={isLoading}
+                className="flex-1"
+              >
+                {isLoading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                    Solving...
+                  </>
+                ) : (
+                  <>Solve Puzzle</>
+                )}
+              </Button>
+              <Button variant="outline" onClick={handleReset}>
+                Reset
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Basic Solution Display */}
+        {solution && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Solution Result</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {solution.possible ? (
+                <p className="text-green-600 font-medium">
+                  Solution found in {solution.steps.length} steps!
+                </p>
+              ) : (
+                <p className="text-red-600 font-medium">{solution.message}</p>
+              )}
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   );
