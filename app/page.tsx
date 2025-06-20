@@ -11,6 +11,16 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import {
+  Play,
+  RotateCcw,
+  Droplets,
+  AlertCircle,
+  CheckCircle2,
+} from "lucide-react";
 
 interface Step {
   jugX: number;
@@ -30,6 +40,8 @@ export default function WaterJugChallenge() {
   const [jugY, setJugY] = useState<number>(10);
   const [target, setTarget] = useState<number>(4);
   const [solution, setSolution] = useState<Solution | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [currentStep, setCurrentStep] = useState(0);
 
   // GCD function
   const gcd = (a: number, b: number): number => {
@@ -100,16 +112,21 @@ export default function WaterJugChallenge() {
 
       // All possible next states
       const nextStates = [
+        // Fill jug X
         {
           state: [x, currentY] as [number, number],
           action: `Fill jug X (${x}L capacity)`,
         },
+        // Fill jug Y
         {
           state: [currentX, y] as [number, number],
           action: `Fill jug Y (${y}L capacity)`,
         },
+        // Empty jug X
         { state: [0, currentY] as [number, number], action: "Empty jug X" },
+        // Empty jug Y
         { state: [currentX, 0] as [number, number], action: "Empty jug Y" },
+        // Transfer X to Y
         {
           state: [
             Math.max(0, currentX - (y - currentY)),
@@ -117,6 +134,7 @@ export default function WaterJugChallenge() {
           ] as [number, number],
           action: "Transfer from jug X to jug Y",
         },
+        // Transfer Y to X
         {
           state: [
             Math.min(x, currentX + currentY),
@@ -152,8 +170,6 @@ export default function WaterJugChallenge() {
     };
   };
 
-  const [isLoading, setIsLoading] = useState(false);
-
   const handleSolve = async () => {
     if (jugX <= 0 || jugY <= 0 || target <= 0) {
       setSolution({
@@ -165,7 +181,9 @@ export default function WaterJugChallenge() {
     }
 
     setIsLoading(true);
+    setCurrentStep(0);
 
+    // Add a small delay to show loading state
     setTimeout(() => {
       const result = solvePuzzle(jugX, jugY, target);
       setSolution(result);
@@ -175,6 +193,17 @@ export default function WaterJugChallenge() {
 
   const handleReset = () => {
     setSolution(null);
+    setCurrentStep(0);
+  };
+
+  const getJugFillPercentage = (current: number, capacity: number) => {
+    return (current / capacity) * 100;
+  };
+
+  const getJugStatus = (current: number, capacity: number) => {
+    if (current === 0) return "Empty";
+    if (current === capacity) return "Full";
+    return "Partially Full";
   };
 
   return (
@@ -183,6 +212,7 @@ export default function WaterJugChallenge() {
         {/* Header */}
         <div className="text-center space-y-2">
           <h1 className="text-4xl font-bold text-gray-900 flex items-center justify-center gap-2">
+            <Droplets className="text-blue-500" />
             Water Jug Challenge
           </h1>
           <p className="text-gray-600 max-w-2xl mx-auto">
@@ -191,96 +221,378 @@ export default function WaterJugChallenge() {
           </p>
         </div>
 
-        {/* Input Section */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Problem Setup</CardTitle>
-            <CardDescription>
-              Enter the capacities of both jugs and the target amount to measure
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="jugX">Jug X Capacity</Label>
-                <Input
-                  id="jugX"
-                  type="number"
-                  min="1"
-                  value={jugX}
-                  onChange={(e) =>
-                    setJugX(Number.parseInt(e.target.value) || 0)
-                  }
-                  placeholder="e.g., 2"
-                />
+        <div className="grid lg:grid-cols-2 gap-6">
+          {/* Input Section */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Problem Setup</CardTitle>
+              <CardDescription>
+                Enter the capacities of both jugs and the target amount to
+                measure
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="jugX">Jug X Capacity</Label>
+                  <Input
+                    id="jugX"
+                    type="number"
+                    min="1"
+                    value={jugX}
+                    onChange={(e) =>
+                      setJugX(Number.parseInt(e.target.value) || 0)
+                    }
+                    placeholder="e.g., 2"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="jugY">Jug Y Capacity</Label>
+                  <Input
+                    id="jugY"
+                    type="number"
+                    min="1"
+                    value={jugY}
+                    onChange={(e) =>
+                      setJugY(Number.parseInt(e.target.value) || 0)
+                    }
+                    placeholder="e.g., 10"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="target">Target Amount</Label>
+                  <Input
+                    id="target"
+                    type="number"
+                    min="1"
+                    value={target}
+                    onChange={(e) =>
+                      setTarget(Number.parseInt(e.target.value) || 0)
+                    }
+                    placeholder="e.g., 4"
+                  />
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="jugY">Jug Y Capacity</Label>
-                <Input
-                  id="jugY"
-                  type="number"
-                  min="1"
-                  value={jugY}
-                  onChange={(e) =>
-                    setJugY(Number.parseInt(e.target.value) || 0)
-                  }
-                  placeholder="e.g., 10"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="target">Target Amount</Label>
-                <Input
-                  id="target"
-                  type="number"
-                  min="1"
-                  value={target}
-                  onChange={(e) =>
-                    setTarget(Number.parseInt(e.target.value) || 0)
-                  }
-                  placeholder="e.g., 4"
-                />
-              </div>
-            </div>
 
-            <div className="flex gap-2">
-              <Button
-                onClick={handleSolve}
-                disabled={isLoading}
-                className="flex-1"
-              >
-                {isLoading ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
-                    Solving...
-                  </>
-                ) : (
-                  <>Solve Puzzle</>
-                )}
-              </Button>
-              <Button variant="outline" onClick={handleReset}>
-                Reset
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+              <div className="flex gap-2">
+                <Button
+                  onClick={handleSolve}
+                  disabled={isLoading}
+                  className="flex-1"
+                >
+                  {isLoading ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                      Solving...
+                    </>
+                  ) : (
+                    <>
+                      <Play className="w-4 h-4 mr-2" />
+                      Solve Puzzle
+                    </>
+                  )}
+                </Button>
+                <Button variant="outline" onClick={handleReset}>
+                  <RotateCcw className="w-4 h-4 mr-2" />
+                  Reset
+                </Button>
+              </div>
 
-        {/* Basic Solution Display */}
+              {/* Quick Examples */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Quick Examples:</Label>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setJugX(2);
+                      setJugY(10);
+                      setTarget(4);
+                    }}
+                  >
+                    2, 10 → 4
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setJugX(2);
+                      setJugY(100);
+                      setTarget(96);
+                    }}
+                  >
+                    2, 100 → 96
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setJugX(2);
+                      setJugY(6);
+                      setTarget(5);
+                    }}
+                  >
+                    2, 6 → 5 (No Solution)
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Current State Visualization */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Current State</CardTitle>
+              <CardDescription>
+                Visual representation of both jugs
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {solution && solution.possible && solution.steps.length > 0 ? (
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium">
+                      Step {currentStep + 1} of {solution.steps.length}
+                    </span>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() =>
+                          setCurrentStep(Math.max(0, currentStep - 1))
+                        }
+                        disabled={currentStep === 0}
+                      >
+                        Previous
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() =>
+                          setCurrentStep(
+                            Math.min(solution.steps.length - 1, currentStep + 1)
+                          )
+                        }
+                        disabled={currentStep === solution.steps.length - 1}
+                      >
+                        Next
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-6">
+                    {/* Jug X */}
+                    <div className="text-center space-y-2">
+                      <h3 className="font-semibold">Jug X ({jugX}L)</h3>
+                      <div className="relative w-20 h-32 mx-auto border-2 border-gray-400 rounded-b-lg bg-gray-50">
+                        <div
+                          className="absolute bottom-0 w-full bg-blue-400 rounded-b-lg transition-all duration-500"
+                          style={{
+                            height: `${getJugFillPercentage(
+                              solution.steps[currentStep].jugX,
+                              jugX
+                            )}%`,
+                          }}
+                        />
+                        <div className="absolute inset-0 flex items-center justify-center text-sm font-bold">
+                          {solution.steps[currentStep].jugX}L
+                        </div>
+                      </div>
+                      <Badge variant="secondary">
+                        {getJugStatus(solution.steps[currentStep].jugX, jugX)}
+                      </Badge>
+                    </div>
+
+                    {/* Jug Y */}
+                    <div className="text-center space-y-2">
+                      <h3 className="font-semibold">Jug Y ({jugY}L)</h3>
+                      <div className="relative w-20 h-32 mx-auto border-2 border-gray-400 rounded-b-lg bg-gray-50">
+                        <div
+                          className="absolute bottom-0 w-full bg-blue-400 rounded-b-lg transition-all duration-500"
+                          style={{
+                            height: `${getJugFillPercentage(
+                              solution.steps[currentStep].jugY,
+                              jugY
+                            )}%`,
+                          }}
+                        />
+                        <div className="absolute inset-0 flex items-center justify-center text-sm font-bold">
+                          {solution.steps[currentStep].jugY}L
+                        </div>
+                      </div>
+                      <Badge variant="secondary">
+                        {getJugStatus(solution.steps[currentStep].jugY, jugY)}
+                      </Badge>
+                    </div>
+                  </div>
+
+                  <div className="text-center p-3 bg-blue-50 rounded-lg">
+                    <p className="text-sm font-medium text-blue-800">
+                      {solution.steps[currentStep].action}
+                    </p>
+                  </div>
+
+                  {(solution.steps[currentStep].jugX === target ||
+                    solution.steps[currentStep].jugY === target) && (
+                    <Alert className="border-green-200 bg-green-50">
+                      <CheckCircle2 className="h-4 w-4 text-green-600" />
+                      <AlertDescription className="text-green-800">
+                        <strong>Solution Found!</strong> Target amount of{" "}
+                        {target}L achieved in {currentStep + 1} steps.
+                      </AlertDescription>
+                    </Alert>
+                  )}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  <Droplets className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                  <p>
+                    Enter values and click "Solve Puzzle" to see the
+                    visualization
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Solution Steps */}
         {solution && (
           <Card>
             <CardHeader>
-              <CardTitle>Solution Result</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                {solution.possible ? (
+                  <CheckCircle2 className="w-5 h-5 text-green-500" />
+                ) : (
+                  <AlertCircle className="w-5 h-5 text-red-500" />
+                )}
+                Solution Result
+              </CardTitle>
             </CardHeader>
             <CardContent>
               {solution.possible ? (
-                <p className="text-green-600 font-medium">
-                  Solution found in {solution.steps.length} steps!
-                </p>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <p className="text-green-600 font-medium">
+                      Solution found in {solution.steps.length} steps!
+                    </p>
+                    <Badge
+                      variant="outline"
+                      className="text-green-600 border-green-200"
+                    >
+                      Optimal Solution
+                    </Badge>
+                  </div>
+
+                  <div className="overflow-x-auto">
+                    <table className="w-full border-collapse">
+                      <thead>
+                        <tr className="border-b">
+                          <th className="text-left p-2 font-medium">Step</th>
+                          <th className="text-left p-2 font-medium">
+                            Jug X ({jugX}L)
+                          </th>
+                          <th className="text-left p-2 font-medium">
+                            Jug Y ({jugY}L)
+                          </th>
+                          <th className="text-left p-2 font-medium">Action</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {solution.steps.map((step, index) => (
+                          <tr
+                            key={index}
+                            className={`border-b hover:bg-gray-50 ${
+                              index === currentStep
+                                ? "bg-blue-50 border-blue-200"
+                                : ""
+                            } ${
+                              step.jugX === target || step.jugY === target
+                                ? "bg-green-50"
+                                : ""
+                            }`}
+                          >
+                            <td className="p-2 font-mono">{index}</td>
+                            <td className="p-2 font-mono text-center">
+                              <Badge
+                                variant={
+                                  step.jugX === target ? "default" : "secondary"
+                                }
+                              >
+                                {step.jugX}
+                              </Badge>
+                            </td>
+                            <td className="p-2 font-mono text-center">
+                              <Badge
+                                variant={
+                                  step.jugY === target ? "default" : "secondary"
+                                }
+                              >
+                                {step.jugY}
+                              </Badge>
+                            </td>
+                            <td className="p-2 text-sm">{step.action}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
               ) : (
-                <p className="text-red-600 font-medium">{solution.message}</p>
+                <Alert className="border-red-200 bg-red-50">
+                  <AlertCircle className="h-4 w-4 text-red-600" />
+                  <AlertDescription className="text-red-800">
+                    <strong>No Solution:</strong> {solution.message}
+                  </AlertDescription>
+                </Alert>
               )}
             </CardContent>
           </Card>
         )}
+
+        {/* Algorithm Explanation */}
+        <Card>
+          <CardHeader>
+            <CardTitle>How It Works</CardTitle>
+            <CardDescription>
+              Understanding the mathematical theory behind the solution
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <h4 className="font-semibold">Mathematical Theory</h4>
+                <p className="text-sm text-gray-600">
+                  A solution exists if and only if the target amount Z is
+                  divisible by the Greatest Common Divisor (GCD) of the two jug
+                  capacities X and Y.
+                </p>
+              </div>
+              <div className="space-y-2">
+                <h4 className="font-semibold">Algorithm</h4>
+                <p className="text-sm text-gray-600">
+                  We use Breadth-First Search (BFS) to find the shortest
+                  sequence of operations that leads to the target amount.
+                </p>
+              </div>
+            </div>
+
+            <Separator />
+
+            <div className="space-y-2">
+              <h4 className="font-semibold">Allowed Operations</h4>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-sm">
+                <Badge variant="outline">Fill Jug X</Badge>
+                <Badge variant="outline">Fill Jug Y</Badge>
+                <Badge variant="outline">Empty Jug X</Badge>
+                <Badge variant="outline">Empty Jug Y</Badge>
+                <Badge variant="outline">Transfer X → Y</Badge>
+                <Badge variant="outline">Transfer Y → X</Badge>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
